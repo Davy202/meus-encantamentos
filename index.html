@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Encantamentos: estoque e vendas</title>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f0f8;--card:#fff;--ink:#1d1730;--mute:#6b6480;--line:#ddd6ea;--acc:#6d3fd1;--accink:#fff;--glow:#ece3fd;--bad:#b3341f;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#150f22;--card:#211833;--ink:#efe9fb;--mute:#a79cc0;--line:#382c52;--acc:#a98bff;--accink:#150f22;--glow:#2d2147;--bad:#ff8c78}}
+:root[data-theme="dark"]{--bg:#150f22;--card:#211833;--ink:#efe9fb;--mute:#a79cc0;--line:#382c52;--acc:#a98bff;--accink:#150f22;--glow:#2d2147;--bad:#ff8c78}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "DM Sans",system-ui,sans-serif}
+main{max-width:980px;margin:0 auto;padding:20px 16px 48px}
+h1,h2{font-family:"Pixelify Sans",ui-monospace,monospace;margin:0;font-weight:700}
+h1{font-size:28px;margin-bottom:4px}
+h2{font-size:20px;margin-bottom:12px}
+.sub{color:var(--mute);margin:0 0 20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px}
+.grid{display:grid;gap:16px;grid-template-columns:1fr;margin-top:16px}
+@media(max-width:720px){.grid{grid-template-columns:1fr}}
+.sale{background:var(--glow);border-color:var(--acc)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:end}
+label{display:flex;flex-direction:column;gap:4px;font-size:14px;color:var(--mute);flex:1;min-width:110px}
+input,select{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:6px;padding:8px 10px;min-width:0;width:100%}
+button{font:inherit;font-weight:700;cursor:pointer;border:1px solid var(--acc);background:var(--acc);color:var(--accink);border-radius:6px;padding:8px 14px}
+button.ghost{background:transparent;color:var(--ink);border-color:var(--line);font-weight:500}
+button.sm{padding:4px 10px}
+:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.preview{margin:14px 0 4px;font-family:"Pixelify Sans",ui-monospace,monospace;font-size:32px}
+.preview small{font:14px "DM Sans",sans-serif;color:var(--mute);display:block}
+ul{list-style:none;margin:12px 0 0;padding:0}
+li{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;padding:8px 0;border-top:1px solid var(--line)}
+li .n{flex:1;min-width:0;overflow-wrap:anywhere}
+li input{width:90px}
+li input.uq{width:64px}
+.mut{color:var(--mute);font-size:13px}
+textarea{font:13px ui-monospace,monospace;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:6px;padding:8px;width:100%}
+.q{min-width:34px;text-align:center;font-weight:700}
+.empty{color:var(--mute);padding:8px 0}
+.total{display:flex;justify-content:space-between;font-weight:700;font-size:18px;border-top:2px solid var(--ink);padding-top:10px;margin-top:6px}
+.bad{color:var(--bad);font-size:14px;min-height:20px;margin:6px 0 0}
+</style>
+</head>
+<body>
+<main>
+<h1>Meus encantamentos</h1>
+<p class="sub">Estoque, preços e vendas. Tudo fica salvo neste navegador.</p>
+
+<section class="card sale">
+  <h2>Nova venda</h2>
+  <div class="row">
+    <label>Encantamento<select id="sItem"></select></label>
+    <label>Quantidade<input id="sQty" type="number" min="1" value="1"></label>
+    <label>Preço de cada um<input id="sPrice" type="number" min="0" step="any" placeholder="0"></label>
+    <button id="sAdd">Adicionar à nota</button>
+  </div>
+  <div class="preview"><small>Total deste item para o cliente (preço × quantidade)</small><span id="prev">0</span></div>
+  <p class="bad" id="sErr"></p>
+  <ul id="cart"></ul>
+  <div class="total"><span>Total da nota</span><span id="cartTotal">0</span></div>
+  <div class="row" style="margin-top:12px">
+    <button id="finish">Finalizar venda</button>
+    <button id="clear" class="ghost">Limpar nota</button>
+  </div>
+</section>
+
+<div class="grid">
+  <section class="card">
+    <h2>Estoque</h2>
+    <div class="row">
+      <label>Encantamento<input id="aName" list="sug" placeholder="Ex.: Afiação V"></label>
+      <label>Quantidade<input id="aQty" type="number" min="1" value="1"></label>
+      <button id="aAdd">Adicionar ao estoque</button>
+    </div>
+    <datalist id="sug"></datalist>
+    <ul id="stock"></ul>
+  </section>
+</div>
+<section class="card" style="margin-top:16px">
+  <h2>Histórico</h2>
+  <ul id="log"></ul>
+  <div class="row" style="margin-top:12px"><button id="clearLog" class="ghost">Limpar histórico</button></div>
+</section>
+<section class="card" style="margin-top:16px">
+  <h2>Backup</h2>
+  <p class="sub" style="margin:0 0 10px">Gere o texto, guarde num lugar seguro (notas, WhatsApp) e cole de volta aqui para restaurar.</p>
+  <textarea id="bk" rows="4" placeholder="O backup aparece aqui"></textarea>
+  <div class="row" style="margin-top:10px"><button id="bkMake">Gerar backup</button><button id="bkLoad" class="ghost">Restaurar backup</button></div>
+  <p class="mut" id="bkMsg" role="status"></p>
+</section>
+</main>
+
+<script>
+var KEY = "enchant-v1";
+var state = { stock: {}, log: [] };
+var cart = [];
+var SUG = ["Proteção I","Proteção II","Proteção III","Proteção IV","Proteção contra Fogo I","Proteção contra Fogo II","Proteção contra Fogo III","Proteção contra Fogo IV","Proteção contra Explosões I","Proteção contra Explosões II","Proteção contra Explosões III","Proteção contra Explosões IV","Proteção contra Projéteis I","Proteção contra Projéteis II","Proteção contra Projéteis III","Proteção contra Projéteis IV","Queda Suave I","Queda Suave II","Queda Suave III","Queda Suave IV","Respiração I","Respiração II","Respiração III","Afinidade Aquática I","Espinhos I","Espinhos II","Espinhos III","Passos Profundos I","Passos Profundos II","Passos Profundos III","Passos de Gelo I","Passos de Gelo II","Velocidade das Almas I","Velocidade das Almas II","Velocidade das Almas III","Passos Furtivos I","Passos Furtivos II","Passos Furtivos III","Maldição do Ligamento I","Maldição do Desaparecimento I","Afiação I","Afiação II","Afiação III","Afiação IV","Afiação V","Julgamento I","Julgamento II","Julgamento III","Julgamento IV","Julgamento V","Ruína dos Artrópodes I","Ruína dos Artrópodes II","Ruína dos Artrópodes III","Ruína dos Artrópodes IV","Ruína dos Artrópodes V","Repulsão I","Repulsão II","Aspecto Flamejante I","Aspecto Flamejante II","Pilhagem I","Pilhagem II","Pilhagem III","Alcance I","Alcance II","Alcance III","Densidade I","Densidade II","Densidade III","Densidade IV","Densidade V","Ruptura I","Ruptura II","Ruptura III","Ruptura IV","Rajada de Vento I","Rajada de Vento II","Rajada de Vento III","Eficiência I","Eficiência II","Eficiência III","Eficiência IV","Eficiência V","Toque de Seda I","Fortuna I","Fortuna II","Fortuna III","Inquebrável I","Inquebrável II","Inquebrável III","Remendo I","Força I","Força II","Força III","Força IV","Força V","Impacto I","Impacto II","Chama I","Infinidade I","Perfuração I","Perfuração II","Perfuração III","Perfuração IV","Rajada I","Recarga Rápida I","Recarga Rápida II","Recarga Rápida III","Lealdade I","Lealdade II","Lealdade III","Correnteza I","Correnteza II","Correnteza III","Condutividade I","Penetração I","Penetração II","Penetração III","Penetração IV","Penetração V","Sorte do Mar I","Sorte do Mar II","Sorte do Mar III","Isca I","Isca II","Isca III"];
+
+try { var raw = localStorage.getItem(KEY); if (raw) { var d = JSON.parse(raw); state.stock = d.stock || {}; state.log = (d.log || []).filter(function (r) { return r && r.type !== "venda"; }); } } catch (e) {}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+function addLog(type, name, qty, price) {
+  state.log.unshift({ t: Date.now(), type: type, name: name, qty: qty, price: price });
+  if (state.log.length > 500) state.log.length = 500;
+}
+var $ = function (id) { return document.getElementById(id); };
+var fmt = function (n) { return Number(n).toLocaleString("pt-BR", { maximumFractionDigits: 2 }); };
+function el(tag, text, cls) { var e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (cls) e.className = cls; return e; }
+function btn(text, fn, ghost) { var b = el("button", text, "sm" + (ghost ? " ghost" : "")); b.type = "button"; b.onclick = fn; return b; }
+
+function renderSelect() {
+  var sel = $("sItem"), cur = sel.value;
+  sel.innerHTML = "";
+  Object.keys(state.stock).forEach(function (n) {
+    var o = el("option", n + " (" + state.stock[n] + " em estoque)"); o.value = n; sel.appendChild(o);
+  });
+  if (cur && state.stock[cur] !== undefined) sel.value = cur;
+  preview();
+}
+function preview() {
+  var q = parseInt($("sQty").value, 10) || 0, p = parseFloat($("sPrice").value) || 0;
+  $("prev").textContent = fmt(p * q);
+}
+function renderStock() {
+  var ul = $("stock"); ul.innerHTML = "";
+  var names = Object.keys(state.stock);
+  if (!names.length) { ul.appendChild(el("li", "Nenhum encantamento ainda. Adicione o primeiro acima.", "empty")); return; }
+  names.forEach(function (n) {
+    var li = el("li");
+    li.appendChild(el("span", n, "n"));
+    li.appendChild(btn("−", function () { change(n, -1); }, true));
+    li.appendChild(el("span", state.stock[n], "q"));
+    li.appendChild(btn("+", function () { change(n, 1); }, true));
+    var uq = el("input"); uq.type = "number"; uq.min = "1"; uq.value = "1"; uq.className = "uq";
+    uq.setAttribute("aria-label", "Quantidade usada de " + n);
+    li.appendChild(uq);
+    li.appendChild(btn("Usar", function () {
+      var q = Math.min(parseInt(uq.value, 10) || 0, state.stock[n]);
+      if (q < 1) return;
+      state.stock[n] -= q; addLog("uso", n, q); save(); renderAll();
+    }, true));
+    li.appendChild(btn("Remover", function () { delete state.stock[n]; save(); renderAll(); }, true));
+    ul.appendChild(li);
+  });
+}
+function change(n, d) {
+  var old = state.stock[n]; state.stock[n] = Math.max(0, old + d);
+  if (state.stock[n] !== old) addLog("ajuste", n, state.stock[n] - old);
+  save(); renderAll();
+}
+function renderCart() {
+  var ul = $("cart"), total = 0; ul.innerHTML = "";
+  if (!cart.length) ul.appendChild(el("li", "A nota está vazia.", "empty"));
+  cart.forEach(function (c, i) {
+    var sub = c.price * c.qty; total += sub;
+    var li = el("li");
+    li.appendChild(el("span", c.qty + " × " + c.name + " a " + fmt(c.price), "n"));
+    li.appendChild(el("span", fmt(sub), "q"));
+    li.appendChild(btn("Tirar", function () { cart.splice(i, 1); renderCart(); }, true));
+    ul.appendChild(li);
+  });
+  $("cartTotal").textContent = fmt(total);
+}
+var LBL = { entrada: "Entrada", uso: "Uso", ajuste: "Ajuste" };
+function renderLog() {
+  var ul = $("log"); ul.innerHTML = "";
+  if (!state.log.length) { ul.appendChild(el("li", "Nada registrado ainda.", "empty")); return; }
+  state.log.slice(0, 50).forEach(function (r) {
+    var txt = (LBL[r.type] || "Registro") + ": ";
+    if (r.type === "ajuste") txt += (r.qty > 0 ? "+" : "") + r.qty + " " + r.name;
+    else txt += r.qty + " × " + r.name;
+    var d = new Date(r.t).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+    var li = el("li");
+    li.appendChild(el("span", txt, "n")); li.appendChild(el("span", d, "mut"));
+    ul.appendChild(li);
+  });
+}
+function renderAll() { renderStock(); renderSelect(); renderCart(); renderLog(); }
+
+function inCart(n) { return cart.reduce(function (s, c) { return c.name === n ? s + c.qty : s; }, 0); }
+
+$("aAdd").onclick = function () {
+  var n = $("aName").value.trim(), q = parseInt($("aQty").value, 10);
+  if (!n || !(q > 0)) return;
+  state.stock[n] = (state.stock[n] || 0) + q; addLog("entrada", n, q);
+  $("aName").value = ""; $("aQty").value = 1;
+  save(); renderAll();
+};
+$("sItem").onchange = preview;
+$("sQty").oninput = preview;
+$("sPrice").oninput = preview;
+$("sAdd").onclick = function () {
+  var n = $("sItem").value, q = parseInt($("sQty").value, 10), p = parseFloat($("sPrice").value), err = $("sErr");
+  err.textContent = "";
+  if (!n) { err.textContent = "Adicione um encantamento ao estoque primeiro."; return; }
+  if (!(q > 0)) { err.textContent = "Digite uma quantidade maior que zero."; return; }
+  if (q + inCart(n) > state.stock[n]) { err.textContent = "Estoque insuficiente: você tem " + state.stock[n] + " de " + n + "."; return; }
+  if (!(p >= 0)) { err.textContent = "Digite o preço de cada um."; return; }
+  cart.push({ name: n, qty: q, price: p }); $("sPrice").value = ""; preview(); renderCart();
+};
+$("finish").onclick = function () {
+  if (!cart.length) { $("sErr").textContent = "A nota está vazia."; return; }
+  cart.forEach(function (c) { state.stock[c.name] = Math.max(0, state.stock[c.name] - c.qty); });
+  cart = []; $("sErr").textContent = ""; save(); renderAll();
+};
+$("clear").onclick = function () { cart = []; $("sErr").textContent = ""; renderCart(); };
+
+$("clearLog").onclick = function () { state.log = []; save(); renderLog(); };
+$("bkMake").onclick = function () {
+  $("bk").value = JSON.stringify({ stock: state.stock, log: state.log });
+  $("bk").select(); $("bkMsg").textContent = "Backup gerado. Copie o texto acima e guarde.";
+};
+$("bkLoad").onclick = function () {
+  try {
+    var d = JSON.parse($("bk").value);
+    if (!d || typeof d.stock !== "object" || Array.isArray(d.stock)) throw 0;
+    var st = {};
+    Object.keys(d.stock).forEach(function (k) { var v = parseInt(d.stock[k], 10); if (v >= 0) st[k] = v; });
+    state.stock = st; state.log = Array.isArray(d.log) ? d.log.filter(function (r) { return r && r.type !== "venda"; }).slice(0, 500) : [];
+    cart = []; save(); renderAll(); $("bkMsg").textContent = "Backup restaurado.";
+  } catch (e) { $("bkMsg").textContent = "Texto inválido. Cole o texto completo gerado por Gerar backup."; }
+};
+SUG.forEach(function (s) { var o = document.createElement("option"); o.value = s; $("sug").appendChild(o); });
+renderAll();
+</script>
+</body>
+</html>
