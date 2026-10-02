@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Encantamentos: estoque, vendas e entregas</title>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#05030f;--card:rgba(20,12,40,.78);--ink:#f1ebff;--mute:#a99dc8;--line:rgba(180,150,255,.25);--acc:#b58cff;--accink:#12082a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "DM Sans",system-ui,sans-serif}
+#bg{position:fixed;inset:0;overflow:hidden;z-index:0;pointer-events:none}
+.nl{position:absolute;inset:-10%;will-change:transform}
+.neb{position:absolute;border-radius:50%;will-change:transform;animation:drift 120s ease-in-out infinite alternate}
+@keyframes drift{from{transform:translate(0,0) scale(1)}to{transform:translate(var(--dx),var(--dy)) scale(1.18)}}
+#cv{position:absolute;inset:0}
+.app{position:relative;z-index:1;display:flex;min-height:100vh}
+nav{width:220px;flex:none;padding:20px 14px;background:rgba(10,6,24,.82);border-right:1px solid var(--line);display:flex;flex-direction:column;gap:8px;position:sticky;top:0;height:100vh}
+.brand{font:700 20px "Pixelify Sans",ui-monospace,monospace;margin:0 6px 14px}
+nav button{text-align:left;font:500 16px "Pixelify Sans",ui-monospace,monospace;color:var(--ink);background:transparent;border:2px solid transparent;border-radius:0;padding:10px 12px;cursor:pointer;transition:background .2s,border-color .2s}
+nav button:hover{background:rgba(181,140,255,.12)}
+nav button.on{background:rgba(181,140,255,.22);border-color:var(--acc);box-shadow:4px 4px 0 rgba(181,140,255,.35)}
+main{flex:1;min-width:0;padding:24px 20px 56px;max-width:1000px}
+.page{display:none}
+.page.on{display:block;animation:pin .4s ease both}
+@keyframes pin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+h1,h2{font-family:"Pixelify Sans",ui-monospace,monospace;margin:0 0 12px}
+h1{font-size:28px}h2{font-size:20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:16px;margin-bottom:16px;backdrop-filter:blur(4px)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:end}
+label{display:flex;flex-direction:column;gap:4px;font-size:14px;color:var(--mute);flex:1;min-width:120px}
+input,select{font:inherit;color:var(--ink);background:rgba(8,4,20,.8);border:1px solid var(--line);border-radius:4px;padding:8px 10px;width:100%;min-width:0}
+button.b{font:700 15px "DM Sans",sans-serif;cursor:pointer;border:1px solid var(--acc);background:var(--acc);color:var(--accink);border-radius:4px;padding:8px 14px}
+button.g{background:transparent;color:var(--ink);border-color:var(--line);font-weight:500}
+button.s{padding:4px 10px;font-size:14px}
+:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.sc{overflow-x:auto;margin-top:12px}
+table{width:100%;border-collapse:collapse;min-width:520px}
+th,td{text-align:left;padding:8px 6px;border-top:1px solid var(--line);vertical-align:middle}
+th{color:var(--mute);font-weight:500;font-size:14px;border-top:0}
+td.q{font-weight:700}.mut,td.mut{color:var(--mute);font-size:14px}
+.act{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.act input{width:64px;padding:4px 8px}
+.badge{font-size:13px;padding:2px 8px;border:1px solid;border-radius:3px;white-space:nowrap}
+.s2{color:#7be3a8}.s1{color:#ffd57a}.s0{color:#ff9a9a}
+.preview{margin:14px 0 4px;font:32px "Pixelify Sans",ui-monospace,monospace}
+.preview small{display:block;font:14px "DM Sans",sans-serif;color:var(--mute)}
+.cmp{margin:8px 0;padding:8px 12px;border-left:3px solid var(--line);color:var(--mute);min-height:20px}
+.cmp.up{border-color:#ffd57a;color:#ffd57a}.cmp.dn{border-color:#6fdcff;color:#6fdcff}.cmp.eq{border-color:#7be3a8;color:#7be3a8}
+.err{color:#ff9a9a;font-size:14px;min-height:20px;margin:6px 0 0}
+ul{list-style:none;margin:12px 0 0;padding:0}
+li{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:8px 0;border-top:1px solid var(--line)}
+li .n{flex:1;min-width:0;overflow-wrap:anywhere}
+.total{display:flex;justify-content:space-between;font-weight:700;font-size:18px;border-top:2px solid var(--ink);padding-top:10px;margin-top:6px}
+@media(max-width:760px){.app{flex-direction:column}nav{width:auto;height:auto;position:sticky;z-index:5;flex-direction:row;overflow-x:auto;padding:10px;border-right:0;border-bottom:1px solid var(--line)}.brand{display:none}nav button{white-space:nowrap;padding:8px 12px}main{padding:16px 12px 48px}}
+@media(prefers-reduced-motion:reduce){.neb{animation:none}.page.on{animation:none}}
+</style>
+</head>
+<body>
+<div id="bg"><div class="nl" id="nA"></div><div class="nl" id="nB"></div><canvas id="cv"></canvas></div>
+<div class="app">
+<nav id="nav">
+  <div class="brand">⛏ Encantamentos</div>
+  <button data-p="venda" class="on" aria-current="page">Venda</button>
+  <button data-p="estoque">Meu Estoque</button>
+  <button data-p="entregas">Entregas</button>
+</nav>
+<main>
+
+<section class="page on" id="p-venda">
+  <h1>Venda</h1>
+  <div class="card">
+    <div class="row">
+      <label>Encantamento<select id="sItem"></select></label>
+      <label>Quantidade<input id="sQty" type="number" min="1" value="1"></label>
+      <label>Preço de cada um<input id="sPrice" type="number" min="0" step="any" placeholder="0"></label>
+      <button class="b" id="sAdd">Adicionar à nota</button>
+    </div>
+    <div class="cmp" id="cmp"></div>
+    <div class="preview"><small>Total deste item para o cliente (preço × quantidade)</small><span id="prev">0</span></div>
+    <p class="err" id="sErr"></p>
+    <ul id="cart"></ul>
+    <div class="total"><span>Total da nota</span><span id="cartTotal">0</span></div>
+    <div class="row" style="margin-top:12px"><button class="b" id="finish">Finalizar venda</button><button class="b g" id="clear">Limpar nota</button></div>
+  </div>
+</section>
+
+<section class="page" id="p-estoque">
+  <h1>Meu Estoque</h1>
+  <div class="card">
+    <div class="row">
+      <label>Encantamento<input id="aName" list="sug" placeholder="Ex.: Afiação V"></label>
+      <label>Quantidade<input id="aQty" type="number" min="1" value="1"></label>
+      <button class="b" id="aAdd">Adicionar ao estoque</button>
+      <label style="max-width:150px">Pouco estoque até<input id="low" type="number" min="0"></label>
+    </div>
+    <datalist id="sug"></datalist>
+    <div class="sc"><table><thead><tr><th>Encantamento</th><th>Nível</th><th>Disponível</th><th>Estado</th><th>Ações</th></tr></thead><tbody id="stBody"></tbody></table></div>
+  </div>
+  <div class="card">
+    <h2>Backup</h2>
+    <p class="mut" style="margin:0 0 10px">Salva tudo (estoque, entregas e históricos) num arquivo JSON.</p>
+    <div class="row"><button class="b" id="bkMake">Exportar Backup</button><button class="b g" id="bkLoad">Importar Backup</button><input id="bkFile" type="file" accept="application/json,.json" hidden></div>
+    <p class="mut" id="bkMsg" role="status"></p>
+  </div>
+  <div class="card">
+    <h2>Movimentações do estoque</h2>
+    <ul id="log"></ul>
+    <div class="row" style="margin-top:12px"><button class="b g" id="clearLog">Limpar movimentações</button></div>
+  </div>
+</section>
+
+<section class="page" id="p-entregas">
+  <h1>Entregas</h1>
+  <div class="card">
+    <div class="row">
+      <label>Comprador<input id="dBuyer" placeholder="Ex.: Davy"></label>
+      <label>Encantamento<input id="dName" list="sug" placeholder="Ex.: Afiação IV"></label>
+      <label style="max-width:110px">Quantidade<input id="dQty" type="number" min="1" value="1"></label>
+      <label style="max-width:140px">Preço total<input id="dPrice" type="number" min="0" step="any" placeholder="0"></label>
+      <button class="b" id="dAdd">Adicionar encomenda</button>
+    </div>
+    <p class="err" id="dErr" role="status"></p>
+    <h2 style="margin-top:8px">Pendentes</h2>
+    <div class="sc"><table><thead><tr><th>Comprador</th><th>Encantamento</th><th>Nível</th><th>Qtd.</th><th>Preço</th><th>Status</th><th></th></tr></thead><tbody id="dBody"></tbody></table></div>
+  </div>
+  <div class="card">
+    <h2>Vendas concluídas</h2>
+    <div class="sc"><table><thead><tr><th>Comprador</th><th>Encantamento</th><th>Qtd.</th><th>Valor</th><th>Concluída em</th></tr></thead><tbody id="hBody"></tbody></table></div>
+    <div class="row" style="margin-top:12px"><button class="b g" id="clearHist">Limpar histórico de vendas</button></div>
+  </div>
+</section>
+
+</main>
+</div>
+
+<script>
+var KEY = "enchant-v2";
+var state = { stock: {}, log: [], deliveries: [], history: [], cfg: { low: 3 } };
+var cart = [];
+var ENC = [["Proteção",4],["Proteção contra Fogo",4],["Proteção contra Explosões",4],["Proteção contra Projéteis",4],["Queda Suave",4],["Respiração",3],["Afinidade Aquática",1],["Espinhos",3],["Passos Profundos",3],["Passos de Gelo",2],["Velocidade das Almas",3],["Passos Furtivos",3],["Maldição do Ligamento",1],["Maldição do Desaparecimento",1],["Afiação",5],["Julgamento",5],["Ruína dos Artrópodes",5],["Repulsão",2],["Aspecto Flamejante",2],["Pilhagem",3],["Alcance",3],["Densidade",5],["Ruptura",4],["Rajada de Vento",3],["Eficiência",5],["Toque de Seda",1],["Fortuna",3],["Inquebrável",3],["Remendo",1],["Força",5],["Impacto",2],["Chama",1],["Infinidade",1],["Perfuração",4],["Rajada",1],["Recarga Rápida",3],["Lealdade",3],["Correnteza",3],["Condutividade",1],["Penetração",5],["Sorte do Mar",3],["Isca",3]];
+var ROM = ["I","II","III","IV","V"];
+/* Preços de mercado. "Peso Pena" = Queda Suave e "Carga Rápida" = Recarga Rápida (nomes da lista de encantamentos do site). */
+var MK = {"Afiação I":100,"Afiação II":250,"Afiação III":500,"Afiação IV":850,"Aspecto Flamejante I":200,"Aspecto Flamejante II":350,"Alcance I":325,"Alcance II":550,"Alcance III":850,"Proteção I":100,"Proteção II":230,"Proteção III":400,"Proteção IV":600,"Espinhos I":200,"Queda Suave I":80,"Queda Suave II":120,"Queda Suave III":180,"Queda Suave IV":225,"Força I":90,"Força II":225,"Força III":350,"Força IV":600,"Chama I":525,"Impacto I":350,"Impacto II":600,"Recarga Rápida I":500,"Recarga Rápida II":850,"Rajada I":850,"Perfuração I":135,"Perfuração II":230,"Perfuração III":385,"Perfuração IV":520,"Lealdade I":100,"Lealdade II":190,"Lealdade III":350,"Penetração I":80,"Penetração II":150,"Penetração III":260,"Penetração IV":375,"Condutividade I":620,"Sorte do Mar I":300,"Sorte do Mar II":500,"Sorte do Mar III":700,"Isca I":275,"Isca II":400,"Isca III":600};
+
+function load(d) {
+  var st = {};
+  if (d.stock && typeof d.stock === "object" && !Array.isArray(d.stock)) Object.keys(d.stock).forEach(function (k) { var v = parseInt(d.stock[k], 10); if (v >= 0) st[k] = v; });
+  state.stock = st;
+  state.log = (Array.isArray(d.log) ? d.log : []).filter(function (r) { return r && r.type !== "venda"; }).slice(0, 500);
+  state.deliveries = Array.isArray(d.deliveries) ? d.deliveries : [];
+  state.history = Array.isArray(d.history) ? d.history : [];
+  var l = parseInt(d.cfg && d.cfg.low, 10); state.cfg = { low: l >= 0 ? l : 3 };
+}
+try { var raw = localStorage.getItem(KEY) || localStorage.getItem("enchant-v1"); if (raw) load(JSON.parse(raw)); } catch (e) {}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+function addLog(type, name, qty) { state.log.unshift({ t: Date.now(), type: type, name: name, qty: qty }); if (state.log.length > 500) state.log.length = 500; }
+
+var $ = function (id) { return document.getElementById(id); };
+var fmt = function (n) { return Number(n).toLocaleString("pt-BR", { maximumFractionDigits: 2 }); };
+var dt = function (t) { return new Date(t).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" }); };
+function el(tag, text, cls) { var e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (cls) e.className = cls; return e; }
+function btn(text, fn, ghost) { var b = el("button", text, "b s" + (ghost ? " g" : "")); b.type = "button"; b.onclick = fn; return b; }
+function lvl(n) { var m = String(n).match(/^(.*?)\s+([IVX]+)$/); return m ? [m[1], m[2]] : [n, "—"]; }
+function row(cells) { var tr = el("tr"); cells.forEach(function (c) { tr.appendChild(typeof c === "object" ? c : el("td", c)); }); return tr; }
+function emptyRow(tb, cols, msg) { var tr = el("tr"), t = el("td", msg, "mut"); t.colSpan = cols; tr.appendChild(t); tb.appendChild(tr); }
+
+/* ---------- navegação ---------- */
+function go(p) {
+  document.querySelectorAll(".page").forEach(function (s) { s.classList.toggle("on", s.id === "p-" + p); });
+  document.querySelectorAll("#nav button").forEach(function (b) {
+    var on = b.dataset.p === p; b.classList.toggle("on", on);
+    if (on) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
+  });
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll("#nav button").forEach(function (b) { b.onclick = function () { go(b.dataset.p); }; });
+
+/* ---------- comparação com o mercado ---------- */
+function cmpText(n, p) {
+  var m = MK[n];
+  if (!n || isNaN(p)) return ["", ""];
+  if (m === undefined) return ["Sem preço de mercado cadastrado para este item.", ""];
+  var d = p - m;
+  if (d > 0) return ["Você está vendendo acima do preço de mercado (" + fmt(m) + "): +" + fmt(d) + " por unidade.", "up"];
+  if (d < 0) return ["Você está vendendo abaixo do preço de mercado (" + fmt(m) + "): −" + fmt(-d) + " por unidade.", "dn"];
+  return ["Preço igual ao preço de mercado (" + fmt(m) + ").", "eq"];
+}
+
+/* ---------- Venda ---------- */
+function renderSelect() {
+  var sel = $("sItem"), cur = sel.value; sel.innerHTML = "";
+  Object.keys(state.stock).forEach(function (n) {
+    if (state.stock[n] < 1) return;
+    var o = el("option", n + " (" + state.stock[n] + " em estoque)"); o.value = n; sel.appendChild(o);
+  });
+  if (cur && state.stock[cur] > 0) sel.value = cur;
+  preview();
+}
+function preview() {
+  var q = parseInt($("sQty").value, 10) || 0, p = parseFloat($("sPrice").value);
+  $("prev").textContent = fmt((p || 0) * q);
+  var c = cmpText($("sItem").value, p), box = $("cmp");
+  box.textContent = c[0]; box.className = "cmp " + c[1];
+}
+function inCart(n) { return cart.reduce(function (s, c) { return c.name === n ? s + c.qty : s; }, 0); }
+function renderCart() {
+  var ul = $("cart"), total = 0; ul.innerHTML = "";
+  if (!cart.length) ul.appendChild(el("li", "A nota está vazia.", "mut"));
+  cart.forEach(function (c, i) {
+    var sub = c.price * c.qty; total += sub;
+    var li = el("li");
+    li.appendChild(el("span", c.qty + " × " + c.name + " a " + fmt(c.price), "n"));
+    li.appendChild(el("span", fmt(sub), "q"));
+    li.appendChild(btn("Tirar", function () { cart.splice(i, 1); renderCart(); }, true));
+    ul.appendChild(li);
+  });
+  $("cartTotal").textContent = fmt(total);
+}
+$("sItem").onchange = preview; $("sQty").oninput = preview; $("sPrice").oninput = preview;
+$("sAdd").onclick = function () {
+  var n = $("sItem").value, q = parseInt($("sQty").value, 10), p = parseFloat($("sPrice").value), err = $("sErr");
+  err.textContent = "";
+  if (!n) { err.textContent = "Cadastre um encantamento no Meu Estoque primeiro."; return; }
+  if (!(q > 0)) { err.textContent = "Digite uma quantidade maior que zero."; return; }
+  if (!(p >= 0)) { err.textContent = "Digite o preço de cada um."; return; }
+  if (q + inCart(n) > state.stock[n]) { err.textContent = "Estoque insuficiente: você tem " + state.stock[n] + " de " + n + "."; return; }
+  cart.push({ name: n, qty: q, price: p }); $("sPrice").value = ""; preview(); renderCart();
+};
+$("finish").onclick = function () {
+  if (!cart.length) { $("sErr").textContent = "A nota está vazia."; return; }
+  cart.forEach(function (c) { state.stock[c.name] = Math.max(0, state.stock[c.name] - c.qty); });
+  cart = []; $("sErr").textContent = ""; save(); renderAll();
+};
+$("clear").onclick = function () { cart = []; $("sErr").textContent = ""; renderCart(); };
+
+/* ---------- Meu Estoque ---------- */
+function change(n, d) {
+  var old = state.stock[n]; state.stock[n] = Math.max(0, old + d);
+  if (state.stock[n] !== old) addLog("ajuste", n, state.stock[n] - old);
+  save(); renderAll();
+}
+function renderStock() {
+  var tb = $("stBody"); tb.innerHTML = "";
+  var ns = Object.keys(state.stock);
+  if (!ns.length) { emptyRow(tb, 5, "Estoque vazio. Cadastre o primeiro encantamento acima."); return; }
+  ns.forEach(function (n) {
+    var q = state.stock[n], L = lvl(n);
+    var st = q === 0 ? ["Sem estoque", "s0"] : q <= state.cfg.low ? ["Pouco estoque", "s1"] : ["Disponível", "s2"];
+    var tdS = el("td"); tdS.appendChild(el("span", st[0], "badge " + st[1]));
+    var ac = el("td", "", "act");
+    var uq = el("input"); uq.type = "number"; uq.min = "1"; uq.value = "1"; uq.setAttribute("aria-label", "Quantidade usada de " + n);
+    ac.appendChild(btn("−", function () { change(n, -1); }, true));
+    ac.appendChild(btn("+", function () { change(n, 1); }, true));
+    ac.appendChild(uq);
+    ac.appendChild(btn("Usar", function () {
+      var u = Math.min(parseInt(uq.value, 10) || 0, state.stock[n]);
+      if (u < 1) return; state.stock[n] -= u; addLog("uso", n, u); save(); renderAll();
+    }, true));
+    ac.appendChild(btn("Remover", function () { delete state.stock[n]; save(); renderAll(); }, true));
+    tb.appendChild(row([L[0], L[1], el("td", q, "q"), tdS, ac]));
+  });
+}
+var LBL = { entrada: "Entrada", uso: "Uso", ajuste: "Ajuste", entrega: "Entrega" };
+function renderLog() {
+  var ul = $("log"); ul.innerHTML = "";
+  if (!state.log.length) { ul.appendChild(el("li", "Nada registrado ainda.", "mut")); return; }
+  state.log.slice(0, 50).forEach(function (r) {
+    var txt = (LBL[r.type] || "Registro") + ": " + (r.type === "ajuste" ? (r.qty > 0 ? "+" : "") + r.qty + " " + r.name : r.qty + " × " + r.name);
+    var li = el("li"); li.appendChild(el("span", txt, "n")); li.appendChild(el("span", dt(r.t), "mut")); ul.appendChild(li);
+  });
+}
+$("aAdd").onclick = function () {
+  var n = $("aName").value.trim(), q = parseInt($("aQty").value, 10);
+  if (!n || !(q > 0)) return;
+  state.stock[n] = (state.stock[n] || 0) + q; addLog("entrada", n, q);
+  $("aName").value = ""; $("aQty").value = 1; save(); renderAll();
+};
+$("low").oninput = function () { var v = parseInt($("low").value, 10); if (v >= 0) { state.cfg.low = v; save(); renderStock(); } };
+$("clearLog").onclick = function () { state.log = []; save(); renderLog(); };
+
+/* ---------- Backup ---------- */
+$("bkMake").onclick = function () {
+  var blob = new Blob([JSON.stringify({ v: 2, stock: state.stock, log: state.log, deliveries: state.deliveries, history: state.history, cfg: state.cfg }, null, 1)], { type: "application/json" });
+  var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "backup-encantamentos.json";
+  document.body.appendChild(a); a.click(); a.remove();
+  $("bkMsg").textContent = "Backup exportado.";
+};
+$("bkLoad").onclick = function () { $("bkFile").click(); };
+$("bkFile").onchange = function () {
+  var f = this.files[0], inp = this; if (!f) return;
+  var r = new FileReader();
+  r.onload = function () {
+    try {
+      var d = JSON.parse(r.result);
+      if (!d || typeof d.stock !== "object") throw 0;
+      if (!confirm("Substituir TODO o estoque, entregas e históricos atuais pelo conteúdo deste backup?")) { $("bkMsg").textContent = "Importação cancelada."; return; }
+      load(d); cart = []; save(); renderAll(); $("bkMsg").textContent = "Backup restaurado.";
+    } catch (e) { $("bkMsg").textContent = "Arquivo inválido. Escolha um backup gerado por Exportar Backup."; }
+  };
+  r.readAsText(f); inp.value = "";
+};
+
+/* ---------- Entregas ---------- */
+function renderDeliv() {
+  var tb = $("dBody"); tb.innerHTML = "";
+  if (!state.deliveries.length) emptyRow(tb, 7, "Nenhuma encomenda pendente.");
+  state.deliveries.forEach(function (e, i) {
+    var L = lvl(e.name), td = el("td", "", "act");
+    td.appendChild(btn("Concluído", function () { finishDeliv(i); }));
+    var tdS = el("td"); tdS.appendChild(el("span", "Pendente", "badge s1"));
+    tb.appendChild(row([e.buyer, L[0], L[1], el("td", e.qty, "q"), fmt(e.price), tdS, td]));
+  });
+  var hb = $("hBody"); hb.innerHTML = "";
+  if (!state.history.length) emptyRow(hb, 5, "Nenhuma venda concluída ainda.");
+  state.history.slice(0, 100).forEach(function (h) { hb.appendChild(row([h.buyer, h.name, h.qty, fmt(h.price), dt(h.t)])); });
+}
+function finishDeliv(i) {
+  var e = state.deliveries[i]; if (!e) return;
+  if (!confirm("Concluir a entrega de " + e.qty + " × " + e.name + " para " + e.buyer + "?")) return;
+  var msg = "";
+  if ((state.stock[e.name] || 0) >= e.qty) { state.stock[e.name] -= e.qty; addLog("entrega", e.name, e.qty); }
+  else msg = "Entrega concluída, mas o estoque não tinha " + e.qty + " de " + e.name + ", então não foi alterado.";
+  state.deliveries.splice(i, 1);
+  state.history.unshift({ t: Date.now(), buyer: e.buyer, name: e.name, qty: e.qty, price: e.price });
+  if (state.history.length > 1000) state.history.length = 1000;
+  save(); renderAll(); $("dErr").textContent = msg;
+}
+$("dAdd").onclick = function () {
+  var b = $("dBuyer").value.trim(), n = $("dName").value.trim(), q = parseInt($("dQty").value, 10), p = parseFloat($("dPrice").value), err = $("dErr");
+  err.textContent = "";
+  if (!b || !n) { err.textContent = "Preencha o comprador e o encantamento."; return; }
+  if (!(q > 0)) { err.textContent = "Digite uma quantidade maior que zero."; return; }
+  if (!(p >= 0)) { err.textContent = "Digite o preço total."; return; }
+  state.deliveries.push({ buyer: b, name: n, qty: q, price: p });
+  $("dBuyer").value = ""; $("dName").value = ""; $("dQty").value = 1; $("dPrice").value = "";
+  save(); renderDeliv();
+};
+$("clearHist").onclick = function () { if (!state.history.length || !confirm("Apagar todo o histórico de vendas concluídas?")) return; state.history = []; save(); renderDeliv(); };
+
+function renderAll() { $("low").value = state.cfg.low; renderStock(); renderSelect(); renderCart(); renderLog(); renderDeliv(); }
+ENC.forEach(function (e) { for (var i = 0; i < e[1]; i++) { var o = document.createElement("option"); o.value = e[0] + " " + ROM[i]; $("sug").appendChild(o); } });
+renderAll();
+
+/* ---------- fundo: galáxia ---------- */
+(function () {
+  var COL = ["#8b2fff","#ff2fd0","#ff5aa5","#2f6bff","#19d9ff","#ff2f3f","#ff8a1f","#ffd21f","#2fe08a","#1a2a9a"];
+  var rm = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var A = $("nA"), B = $("nB"), N = innerWidth < 760 ? 10 : 18;
+  for (var i = 0; i < N; i++) {
+    var d = document.createElement("div"), s = 30 + Math.random() * 35;
+    d.className = "neb";
+    d.style.cssText = "width:" + s + "vmax;height:" + (s * 0.8) + "vmax;left:" + (Math.random() * 100 - 10) + "%;top:" + (Math.random() * 100 - 10) + "%;background:radial-gradient(closest-side," + COL[i % 10] + ",transparent);opacity:" + (0.2 + Math.random() * 0.22) + ";--dx:" + ((Math.random() - .5) * 14) + "vmax;--dy:" + ((Math.random() - .5) * 14) + "vmax;animation-duration:" + (90 + Math.random() * 130) + "s;animation-delay:-" + (Math.random() * 100) + "s";
+    (i % 2 ? A : B).appendChild(d);
+  }
+  var cv = $("cv"), c = cv.getContext("2d"), W, H, S = [], P = [], tx = 0, ty = 0, mx = 0, my = 0;
+  function size() {
+    W = cv.width = innerWidth; H = cv.height = innerHeight;
+    var n = Math.min(420, Math.round(W * H / 5000)); S = []; P = [];
+    for (var i = 0; i < n; i++) S.push({ x: Math.random() * W, y: Math.random() * H, r: Math.random() < .88 ? 1 : (Math.random() < .7 ? 2 : 3), p: Math.random() * 6.28, f: .4 + Math.random() * 1.3, l: Math.random() * 3 | 0, c: Math.random() < .25 ? COL[Math.random() * 9 | 0] : "#ffffff" });
+    for (var j = 0; j < Math.round(n / 6); j++) P.push({ x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - .5) * 6, vy: (Math.random() - .5) * 6, c: COL[Math.random() * 10 | 0], l: Math.random() * 3 | 0 });
+  }
+  var last = 0;
+  function frame(t) {
+    var dtm = Math.min(.1, (t - last) / 1000); last = t;
+    mx += (tx - mx) * .04; my += (ty - my) * .04;
+    A.style.transform = "translate(" + (mx * -14) + "px," + (my * -14) + "px)";
+    B.style.transform = "translate(" + (mx * -28) + "px," + (my * -28) + "px)";
+    c.clearRect(0, 0, W, H);
+    var tt = t / 1000, k, o;
+    for (k = 0; k < S.length; k++) {
+      o = S[k]; c.globalAlpha = .3 + .7 * (.5 + .5 * Math.sin(tt * o.f + o.p)); c.fillStyle = o.c;
+      c.fillRect(o.x + mx * (o.l + 1) * 8, o.y + my * (o.l + 1) * 8, o.r, o.r);
+    }
+    c.globalAlpha = .3;
+    for (k = 0; k < P.length; k++) {
+      o = P[k]; o.x += o.vx * dtm; o.y += o.vy * dtm;
+      if (o.x < 0) o.x = W; else if (o.x > W) o.x = 0; if (o.y < 0) o.y = H; else if (o.y > H) o.y = 0;
+      c.fillStyle = o.c; c.fillRect(o.x + mx * (o.l + 1) * 10, o.y + my * (o.l + 1) * 10, 2, 2);
+    }
+    if (!rm) requestAnimationFrame(frame);
+  }
+  size(); addEventListener("resize", size);
+  addEventListener("mousemove", function (e) { tx = e.clientX / innerWidth - .5; ty = e.clientY / innerHeight - .5; });
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
